@@ -1,3 +1,6 @@
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score
 import pandas as pd
 
 def analyze_data(file_path):
@@ -54,8 +57,52 @@ def analyze_data(file_path):
         "status": status
     }
 
+    ml_results = train_model(df)
+
     return {
         "basic_info": basic_info,
         "insights": insights,
-        "missing_analysis": missing_info
+        "missing_analysis": missing_info,
+        "ml_results": ml_results
+    }
+
+def train_model(df):
+    # Step 1: Select numeric columns only
+    numeric_df = df.select_dtypes(include=['number'])
+
+    if numeric_df.shape[1] < 2:
+        return {"error": "Not enough numeric columns for ML"}
+
+    # Step 2: Choose target (last column)
+    target_column = numeric_df.columns[-1]
+
+    X = numeric_df.drop(columns=[target_column])
+    y = numeric_df[target_column]
+
+    # Step 3: Handle missing values
+    X = X.fillna(X.mean())
+    y = y.fillna(y.mean())
+
+    # Step 4: Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    # Step 5: Train model
+    model = RandomForestRegressor()
+    model.fit(X_train, y_train)
+
+    # Step 6: Predictions
+    y_pred = model.predict(X_test)
+
+    # Step 7: Evaluate
+    score = r2_score(y_test, y_pred)
+
+    # Step 8: Feature importance
+    importance = dict(zip(X.columns, model.feature_importances_))
+
+    return {
+        "target_column": target_column,
+        "model_score": round(score, 3),
+        "feature_importance": importance
     }
