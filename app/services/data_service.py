@@ -3,6 +3,8 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
 import pandas as pd
 
+from app.services.llm_service import generate_explanation
+
 def analyze_data(file_path):
     df = pd.read_csv(file_path)
 
@@ -59,11 +61,17 @@ def analyze_data(file_path):
 
     ml_results = train_model(df)
 
+    if "error" not in ml_results:
+        explanation = generate_explanation(ml_results)
+    else:
+        explanation = "ML model could not be generated."
+
     return {
         "basic_info": basic_info,
         "insights": insights,
         "missing_analysis": missing_info,
-        "ml_results": ml_results
+        "ml_results": ml_results,
+        "llm_explanation": explanation
     }
 
 def train_model(df):
