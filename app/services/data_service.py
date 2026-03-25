@@ -1,6 +1,8 @@
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
+from langchain_community.chat_models import ChatOllama
+from langchain_core.prompts import ChatPromptTemplate
 import pandas as pd
 
 from app.services.llm_service import generate_explanation
@@ -15,16 +17,13 @@ def analyze_data(file_path):
         "missing_values": df.isnull().sum().to_dict(),
     }
 
-    # Select only numeric columns
     numeric_df = df.select_dtypes(include=['number'])
 
     insights = {}
 
     if not numeric_df.empty:
-        # Correlation matrix
         corr_matrix = numeric_df.corr()
 
-        # Flatten correlations and sort
         corr_pairs = (
             corr_matrix.unstack()
             .reset_index()
@@ -75,38 +74,30 @@ def analyze_data(file_path):
     }
 
 def train_model(df):
-    # Step 1: Select numeric columns only
     numeric_df = df.select_dtypes(include=['number'])
 
     if numeric_df.shape[1] < 2:
         return {"error": "Not enough numeric columns for ML"}
 
-    # Step 2: Choose target (last column)
     target_column = numeric_df.columns[-1]
 
     X = numeric_df.drop(columns=[target_column])
     y = numeric_df[target_column]
 
-    # Step 3: Handle missing values
     X = X.fillna(X.mean())
     y = y.fillna(y.mean())
 
-    # Step 4: Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
-    # Step 5: Train model
     model = RandomForestRegressor()
     model.fit(X_train, y_train)
 
-    # Step 6: Predictions
     y_pred = model.predict(X_test)
 
-    # Step 7: Evaluate
     score = r2_score(y_test, y_pred)
 
-    # Step 8: Feature importance
     importance = dict(zip(X.columns, model.feature_importances_))
 
     return {
@@ -114,3 +105,48 @@ def train_model(df):
         "model_score": round(score, 3),
         "feature_importance": importance
     }
+
+def ask_question(file_path, question):
+    df = pd.read_csv(file_path)
+
+    sample_data = df.head(5).to_string()
+
+    prompt = ChatPromptTemplate.from_messages([
+        (
+            "system",
+            """
+            You are a highly skilled data analyst.
+
+            Your job:
+            - Understand datasets
+            - Answer user questions accurately
+            - Perform reasoning when needed
+
+            Rules:
+            - Be precise
+            - Use the dataset context
+            - If unsure, say you are unsure
+            """
+        ),
+        (
+            "human",
+            """
+            Dataset sample:
+            {data}
+
+            Question:
+            {question}
+            """
+        )
+    ])
+
+    llm = ChatOllama(model="llama3")
+
+    chain = prompt | llm
+
+    response = chain.invoke({
+        "data": sample_data,
+        "question": question
+    })
+
+    return response.content
