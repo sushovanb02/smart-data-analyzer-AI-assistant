@@ -5,5 +5,5 @@ from app.routes.query import router as query_router
 
 app = FastAPI()
 
-app.include_router(router)
+app.include_router(router, prefix="/api", tags=["Upload"])
 app.include_router(query_router, prefix="/api", tags=["Query"])
