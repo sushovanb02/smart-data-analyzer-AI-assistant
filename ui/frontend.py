@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
+import os
 
-API_URL = "http://127.0.0.1:8000/api"
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(page_title="AI Data Analyzer", layout="wide")
 
@@ -20,7 +21,7 @@ if uploaded_file:
         with st.spinner("Analyzing..."):
             files = {"file": uploaded_file.getvalue()}
 
-            response = requests.post(f"{API_URL}/upload", files={
+            response = requests.post(f"{API_URL}/api/upload", files={
                 "file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")
             })
 
@@ -78,7 +79,7 @@ if user_input:
 
         with st.spinner("Thinking..."):
             response = requests.post(
-                f"{API_URL}/query",
+                f"{API_URL}/api/query",
                 json={
                     "file_path": st.session_state["file_path"],
                     "question": user_input

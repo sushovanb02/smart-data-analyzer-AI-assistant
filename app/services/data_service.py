@@ -6,6 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 import pandas as pd
 
 from app.services.llm_service import generate_explanation
+from app.services.llm_client import get_llm
 
 def analyze_data(file_path):
     df = pd.read_csv(file_path)
@@ -140,7 +141,7 @@ def ask_question(file_path, question):
         )
     ])
 
-    llm = ChatOllama(model="llama3")
+    llm = llm = get_llm()
 
     chain = prompt | llm
 

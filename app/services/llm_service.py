@@ -2,6 +2,8 @@ from langchain_classic.memory import ConversationBufferMemory
 from langchain_community.chat_models import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 
+from app.services.llm_client import get_llm
+
 memory = ConversationBufferMemory(return_messages=True)
 
 def generate_explanation(ml_results):
@@ -24,7 +26,7 @@ def generate_explanation(ml_results):
         )
     ])
 
-    llm = ChatOllama(model="llama3")
+    llm = get_llm()
 
     chain = prompt | llm
 
